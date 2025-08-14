@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 import User from "../models/user.models.js";
 import bcryptjs from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { JWT_SECRET, JWT_EXPIRES_IN } from "../config/env.js";
+
+import generateToken from "../utils/generate-token.js";
 
 export const Signup = async (req, res, next) => {
   const session = await mongoose.startSession();
@@ -29,11 +29,10 @@ export const Signup = async (req, res, next) => {
       { session }
     );
 
-    const token = jwt.sign({ userId: newUser[0]._id }, JWT_SECRET, {
-      expiresIn: JWT_EXPIRES_IN,
-    });
+    const token = generateToken(newUser._id);
 
-    const { password: _, ...retrieved } = newUser;
+    const userWithoutPassword = newUser[0].toJSON();
+    console.log(userWithoutPassword);
 
     session.commitTransaction();
     session.endSession();
@@ -41,7 +40,7 @@ export const Signup = async (req, res, next) => {
       success: true,
       message: "User created successfully",
       data: {
-        user: retrieved,
+        user: newUser,
         token,
       },
     });
@@ -63,7 +62,17 @@ export const SignIn = async (req, res, next) => {
       throw error;
     }
 
-    const isMatch = await bcryptjs.compare(password,user.password)
+    const isMatch = await bcryptjs.compare(password, user.password);
+
+    if (!isMatch) {
+      const error = new Error("Invalid password");
+      error.status = 401;
+      throw error;
+    }
+    const token = generateToken(user._id);
+    
+
+    res.status(200).json({ success: true, token, data: user});
   } catch (error) {
     next(error);
   }
