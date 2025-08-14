@@ -33,17 +33,15 @@ export const Signup = async (req, res, next) => {
       expiresIn: JWT_EXPIRES_IN,
     });
 
+    const { password: _, ...retrieved } = newUser;
+
     session.commitTransaction();
     session.endSession();
     res.status(201).json({
       success: true,
       message: "User created successfully",
       data: {
-        user: {
-          name: newUser[0].name,
-          email: newUser[0].email,
-          userId: newUser[0]._id,
-        },
+        user: retrieved,
         token,
       },
     });
@@ -53,5 +51,22 @@ export const Signup = async (req, res, next) => {
     next(error);
   }
 };
-export const SignIn = async () => {};
+export const SignIn = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      const error = new Error("User not found");
+      error.status = 404;
+      throw error;
+    }
+
+    const isMatch = await bcryptjs.compare(password,user.password)
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const SignOut = async () => {};
