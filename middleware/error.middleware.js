@@ -3,7 +3,7 @@ const errorMiddleware = (err, req, res, next) => {
     let error = { ...err };
     error.message = err.message;
     console.error(error);
-
+      console.log(err)
     if (err.name === "CastError") {
       const message = "Resources not found";
       error = new Error(message);
