@@ -1,6 +1,4 @@
-import  mongoose  from "mongoose";
-
-
+import mongoose from "mongoose";
 
 const subscriptionSchema = new mongoose.Schema(
   {
@@ -60,47 +58,54 @@ const subscriptionSchema = new mongoose.Schema(
     },
     renewalDate: {
       type: Date,
-      
       validate: {
-        validator: function(value){return value > this.startDate},
+        validator: function (value) {
+          return value > this.startDate;
+        },
         message: "Renewal date must be after start date",
       },
     },
-    user:{
-        type: mongoose.Schema.Types.ObjectId,
-        ref:"User",
-        required:true
-    }
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
   { timestamps: true }
 );
 
-
-
 //  auto save renewal date  before saving the document
 
-subscriptionSchema.pre("save",function(next){
-    if(!this.renewalDate){
-        const renewalPeriod= {
-            daily:1,
-            weekly:7,
-            monthly:30,
-            yearly:365
-        }
-
-        this.renewalDate = new Date(this.startDate)
-        this.renewalDate.setDate(this.renewalDate.getDate() + renewalPeriod[this.frequency])
+subscriptionSchema.pre("save", function (next) {
+  if (!this.renewalDate) {
+    
+    const renewalPeriod = {
+      daily: 1,
+      weekly: 7,
+      monthly: 30,
+      yearly: 365,
+    };
+    
+    if (!this.frequency || !renewalPeriod[this.frequency]) {
+      return next(
+        new Error("Invalid or missing frequency. Cannot set renewal date.")
+      );
     }
-    //  auto update status if renewal date has passed
 
-    if(this.renewalDate <  new Date()){
-        this.status = "expired"
+    this.renewalDate = new Date(this.startDate);
 
-    }
-    next()
-})
+    this.renewalDate.setDate(
+      this.renewalDate.getDate() + renewalPeriod[this.frequency]
+    );
+  }
+  //  auto update status if renewal date has passed
 
+  if (this.renewalDate < new Date()) {
+    this.status = "expired";
+  }
+  next();
+});
 
-const Subscription = mongoose.model("Subscription",subscriptionSchema)
+const Subscription = mongoose.model("Subscription", subscriptionSchema);
 
-export default Subscription
+export default Subscription;
